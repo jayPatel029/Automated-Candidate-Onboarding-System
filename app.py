@@ -7,14 +7,13 @@ import json
 import cv2
 import pytesseract
 import fitz
-import numpy as np
 import re
-from PIL import Image, ImageStat,ImageFilter
-from pytesseract import image_to_string
+from PIL import Image, ImageStat
 from flask_cors import CORS  # Import CORS
 import base64
 from dotenv import load_dotenv
 load_dotenv()
+
 
 # Import your existing functions
 
