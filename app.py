@@ -21,7 +21,6 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for the entire app
 
 # MongoDB Atlas connection
-# MONGO_URI = "mongodb+srv://jaysunilpatel2002:OGVtcewPWnCaVHSs@cluster123.2nio9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster123"
 MONGO_URI = os.getenv('MONGO_URI')
 client = MongoClient(MONGO_URI)
 db = client["form_database"]
