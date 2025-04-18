@@ -11,6 +11,7 @@ import re
 from PIL import Image, ImageStat
 from flask_cors import CORS  # Import CORS
 import base64
+import logging
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -506,7 +507,13 @@ def process_form(pdf_path):
 # if __name__ == '__main__':
 #     # Run the Flask app
 #     app.run(host='0.0.0.0', port=5000)
+from bson import ObjectId
 
+def serialize_mongo_document(doc):
+    for key, value in doc.items():
+        if isinstance(value, ObjectId):
+            doc[key] = str(value)
+    return doc
 
 
 
@@ -515,55 +522,128 @@ UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
+# Setup basic logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
+logger = logging.getLogger(__name__)
+
+
+# @app.route('/process', methods=['POST'])
+# def process_pdf():
+#     if 'file' not in request.files:
+#         return jsonify({"error": "No file uploaded"}), 400
+
+#     uploaded_file = request.files['file']
+#     if uploaded_file.filename == '':
+#         return jsonify({"error": "No file selected"}), 400
+
+#     # Save the file temporarily
+#     temp_file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.filename)
+#     uploaded_file.save(temp_file_path)
+#     print(f"Received and saved PDF: {temp_file_path}")
+
+#     try:
+#         # Process the form from the uploaded PDF
+#         form_model = process_form(temp_file_path)  # Replace with your PDF processing function
+#         form_json = form_model.to_json()
+
+#         # Print the parsed form data
+#         print("Parsed Form Data:")
+#         print(form_json)
+
+#         # Save the data to MongoDB
+#         collection.insert_one(json.loads(form_json))
+
+#         # Clean up the temporary file after processing
+#         os.remove(temp_file_path)
+
+#         return jsonify({"message": "Form processed successfully", "data": json.loads(form_json)})
+
+#     except Exception as e:
+#         # Clean up the temporary file in case of an error
+#         if os.path.exists(temp_file_path):
+#             os.remove(temp_file_path)
+#         return jsonify({"error": str(e)}), 500
+
+
+
+# # Endpoint to fetch all data from MongoDB
+# @app.route('/fetch_all_data', methods=['GET'])
+# def fetch_all_data():
+#     try:
+#         # Query all documents in the MongoDB collection
+#         data = list(collection.find({}, {'_id': 0}))  # Exclude the _id field from results
+
+#         # Return the data as JSON
+#         return jsonify({"message": "Data fetched successfully", "data": data}), 200
+
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+
+
 
 @app.route('/process', methods=['POST'])
 def process_pdf():
     if 'file' not in request.files:
+        logger.warning("No file part in the request.")
         return jsonify({"error": "No file uploaded"}), 400
 
     uploaded_file = request.files['file']
     if uploaded_file.filename == '':
+        logger.warning("File uploaded but no filename provided.")
         return jsonify({"error": "No file selected"}), 400
 
-    # Save the file temporarily
     temp_file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.filename)
-    uploaded_file.save(temp_file_path)
-    print(f"Received and saved PDF: {temp_file_path}")
 
     try:
-        # Process the form from the uploaded PDF
+        uploaded_file.save(temp_file_path)
+        logger.info(f"Received and saved PDF: {temp_file_path}")
+
+        # Process the form
         form_model = process_form(temp_file_path)  # Replace with your PDF processing function
         form_json = form_model.to_json()
+        parsed_data = json.loads(form_json)
 
-        # Print the parsed form data
-        print("Parsed Form Data:")
-        print(form_json)
+        logger.info("Parsed form data successfully.")
 
-        # Save the data to MongoDB
-        collection.insert_one(json.loads(form_json))
+        # Save to MongoDB
+        collection.insert_one(parsed_data)
+        logger.info("Data inserted into MongoDB.")
 
-        # Clean up the temporary file after processing
-        os.remove(temp_file_path)
+        return jsonify({
+            "message": "Form processed successfully",
+            "data": serialize_mongo_document(parsed_data)
+        }), 200
 
-        return jsonify({"message": "Form processed successfully", "data": json.loads(form_json)})
+    except FileNotFoundError:
+        logger.exception("Temporary file not found during processing.")
+        return jsonify({"error": "Temporary file not found"}), 500
+
+    except json.JSONDecodeError:
+        logger.exception("Failed to decode JSON from processed form.")
+        return jsonify({"error": "Invalid JSON format in processed form"}), 500
 
     except Exception as e:
-        # Clean up the temporary file in case of an error
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
+        logger.exception("An unexpected error occurred while processing the form.")
         return jsonify({"error": str(e)}), 500
 
-# Endpoint to fetch all data from MongoDB
+    finally:
+        # Always clean up the temporary file
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+            logger.info(f"Temporary file {temp_file_path} deleted.")
+
 @app.route('/fetch_all_data', methods=['GET'])
 def fetch_all_data():
     try:
-        # Query all documents in the MongoDB collection
-        data = list(collection.find({}, {'_id': 0}))  # Exclude the _id field from results
-
-        # Return the data as JSON
-        return jsonify({"message": "Data fetched successfully", "data": data}), 200
+        data = list(collection.find({}, {'_id': 0}))
+        logger.info(f"Fetched {len(data)} documents from MongoDB.")
+        return jsonify({
+            "message": "Data fetched successfully",
+            "data": data
+        }), 200
 
     except Exception as e:
+        logger.exception("Error occurred while fetching data from MongoDB.")
         return jsonify({"error": str(e)}), 500
 
 # Health check endpoint
