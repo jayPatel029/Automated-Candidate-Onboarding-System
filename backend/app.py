@@ -6,7 +6,7 @@ import os
 import json
 import cv2
 import pytesseract
-import fitz
+import fitz # PyMuPDF
 import re
 from PIL import Image, ImageStat
 from flask_cors import CORS  # Import CORS
@@ -658,6 +658,14 @@ def health_check():
             return jsonify({"status": "API is running", "mongo": "not connected"}), 500
     except Exception as e:
         return jsonify({"status": "API is running", "mongo": "connection failed", "error": str(e)}), 500
+
+@app.route('/', methods=['GET'])
+def hello():
+    return "Hello, from backend!!"
+
+@app.route('/checkrender', methods=['GET'])
+def check_render():
+    return jsonify({"message": "Render check successful"}), 200 
 
 if __name__ == '__main__':
     # Run the Flask app

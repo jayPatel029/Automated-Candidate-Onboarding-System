@@ -1,8 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:untitled2/upload_screen.dart';
 import 'package:untitled2/view_docs.dart';
+import 'package:untitled2/config.dart';
+import 'package:http/http.dart' as http;
 
 class WelcomeScreen extends StatelessWidget {
+
+  Future<void> _checkHealth(BuildContext context) async {
+    try {
+      final response = await http.get(Uri.parse(Config.healthEndpoint));
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Backend is healthy!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Backend health check failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error checking backend health: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _checkRender(BuildContext context) async {
+    try {
+      final response = await http.get(Uri.parse(Config.checkRenderEndpoint));
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Backend is running on Render!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Backend Render check failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error checking Render status: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;

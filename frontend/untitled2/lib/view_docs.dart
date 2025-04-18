@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:untitled2/user_model.dart';
 
+import 'config.dart';
+
 class ViewAllDataPage extends StatefulWidget {
   @override
   _ViewAllDataPageState createState() => _ViewAllDataPageState();
@@ -24,7 +26,8 @@ class _ViewAllDataPageState extends State<ViewAllDataPage> {
   }
 
   Future<List<User>> fetchAllData() async {
-    final url = Uri.parse('http://127.0.0.1:5000/fetch_all_data');
+    // final url = Uri.parse('http://127.0.0.1:5000/fetch_all_data');
+    final url = Uri.parse(Config.fetchAllDataEndpoint);
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {

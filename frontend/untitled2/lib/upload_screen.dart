@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:untitled2/view_docs.dart';
 
+import 'config.dart';
+
 class UploadScreen extends StatefulWidget {
   @override
   _UploadScreenState createState() => _UploadScreenState();
@@ -101,7 +103,8 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
     if (uploadedFileBytes != null && uploadedFileName != null) {
       setState(() => _isUploading = true);
       try {
-        final uri = Uri.parse('http://127.0.0.1:5000/process');
+        // final uri = Uri.parse('http://127.0.0.1:5000/process');
+        final uri = Uri.parse(Config.processEndpoint);
         final request = http.MultipartRequest('POST', uri);
 
         request.files.add(
