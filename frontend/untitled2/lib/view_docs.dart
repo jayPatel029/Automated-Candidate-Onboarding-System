@@ -40,12 +40,15 @@ class _ViewAllDataPageState extends State<ViewAllDataPage> {
           _filteredUsers = users;
           _isLoading = false;
         });
-
+        print("response: ${response}");
         return users;
       } else {
         throw Exception('Failed to load data');
       }
+
     } catch (e) {
+      print("error res: ${e}");
+
       setState(() => _isLoading = false);
       throw e;
     }

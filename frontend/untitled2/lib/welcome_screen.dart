@@ -2,14 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:untitled2/upload_screen.dart';
 import 'package:untitled2/view_docs.dart';
 import 'package:untitled2/config.dart';
+import 'package:untitled2/llm_upload_screen.dart';
 import 'package:http/http.dart' as http;
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
+  @override
+  _WelcomeScreenState createState() => _WelcomeScreenState();
+}
 
-  Future<void> _checkHealth(BuildContext context) async {
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  bool _isCheckingHealth = false;
+  bool _isApiHealthy = false;
+  String? _healthMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkHealth();
+  }
+
+  Future<void> _checkHealth() async {
+    setState(() {
+      _isCheckingHealth = true;
+      _healthMessage = null;
+    });
+
     try {
       final response = await http.get(Uri.parse(Config.healthEndpoint));
       if (response.statusCode == 200) {
+        setState(() {
+          _isApiHealthy = true;
+          _healthMessage = 'API is healthy and running';
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Backend is healthy!'),
@@ -17,6 +41,10 @@ class WelcomeScreen extends StatelessWidget {
           ),
         );
       } else {
+        setState(() {
+          _isApiHealthy = false;
+          _healthMessage = 'API health check failed';
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Backend health check failed'),
@@ -25,40 +53,20 @@ class WelcomeScreen extends StatelessWidget {
         );
       }
     } catch (e) {
+      setState(() {
+        _isApiHealthy = false;
+        _healthMessage = 'Error checking API health: $e';
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error checking backend health: $e'),
           backgroundColor: Colors.red,
         ),
       );
-    }
-  }
-
-  Future<void> _checkRender(BuildContext context) async {
-    try {
-      final response = await http.get(Uri.parse(Config.checkRenderEndpoint));
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Backend is running on Render!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Backend Render check failed'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error checking Render status: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    } finally {
+      setState(() {
+        _isCheckingHealth = false;
+      });
     }
   }
 
@@ -153,20 +161,97 @@ class WelcomeScreen extends StatelessWidget {
                             Colors.teal,
                             () {
                               _showComingSoonDialog(context);
+                              // Navigator.push(
+                              //   context,
+                              //   MaterialPageRoute(
+                              //     builder: (context) => LLMUploadScreen(),
+                              //   ),
+                              // );
                             },
                           ),
                         ],
                       ),
                     ),
 
-                    // Footer
+                    // Footer with API Status
                     SizedBox(height: 48),
-                    Text(
-                      'Powered by Advanced AI Technologies',
-                      style: TextStyle(
-                        color: Colors.indigo.shade600,
-                        fontSize: 14,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Powered by Advanced AI Technologies',
+                          style: TextStyle(
+                            color: Colors.indigo.shade600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Container(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: _isApiHealthy
+                                  ? Colors.green.shade200
+                                  : Colors.red.shade200,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_isCheckingHealth)
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.indigo),
+                                  ),
+                                )
+                              else
+                                Icon(
+                                  _isApiHealthy
+                                      ? Icons.check_circle
+                                      : Icons.error_outline,
+                                  color:
+                                      _isApiHealthy ? Colors.green : Colors.red,
+                                  size: 16,
+                                ),
+                              SizedBox(width: 6),
+                              Text(
+                                _isCheckingHealth
+                                    ? 'Checking...'
+                                    : _isApiHealthy
+                                        ? 'API Online'
+                                        : 'API Offline',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: _isApiHealthy
+                                      ? Colors.green.shade700
+                                      : Colors.red.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              SizedBox(width: 4),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.refresh,
+                                  size: 16,
+                                  color: Colors.indigo.shade600,
+                                ),
+                                onPressed:
+                                    _isCheckingHealth ? null : _checkHealth,
+                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints(),
+                                splashRadius: 16,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -301,4 +386,4 @@ class WelcomeScreen extends StatelessWidget {
       ),
     );
   }
-} 
+}

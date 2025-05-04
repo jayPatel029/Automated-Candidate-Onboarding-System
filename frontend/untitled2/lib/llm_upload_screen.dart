@@ -4,15 +4,14 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:untitled2/view_docs.dart';
-
 import 'config.dart';
 
-class UploadScreen extends StatefulWidget {
+class LLMUploadScreen extends StatefulWidget {
   @override
-  _UploadScreenState createState() => _UploadScreenState();
+  _LLMUploadScreenState createState() => _LLMUploadScreenState();
 }
 
-class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderStateMixin {
+class _LLMUploadScreenState extends State<LLMUploadScreen> with SingleTickerProviderStateMixin {
   Uint8List? uploadedFileBytes;
   String? uploadedFileName;
   bool _isUploading = false;
@@ -77,7 +76,7 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
 
   void _pickFile() async {
     final html.FileUploadInputElement uploadInput = html.FileUploadInputElement();
-    uploadInput.accept = 'application/pdf,image/*';
+    uploadInput.accept = 'application/pdf,image/*,.txt,.doc,.docx';
     uploadInput.click();
 
     uploadInput.onChange.listen((e) {
@@ -103,10 +102,8 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
     if (uploadedFileBytes != null && uploadedFileName != null) {
       setState(() => _isUploading = true);
       try {
-        // final uri = Uri.parse('http://127.0.0.1:5000/process');
-        final uri = Uri.parse(Config.processEndpoint);
+        final uri = Uri.parse(Config.llmProcessEndpoint);
         final request = http.MultipartRequest('POST', uri);
-        print("uplaoding $uri");
 
         request.files.add(
           http.MultipartFile.fromBytes(
@@ -118,33 +115,31 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
 
         final response = await request.send();
         final responseData = await response.stream.bytesToString();
+        
         if (response.statusCode == 200) {
           final jsonResponse = jsonDecode(responseData);
-
           _showSuccessAnimation();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Upload successful: ${jsonResponse["message"]}'),
+              content: Text('Document processing successful: ${jsonResponse["message"]}'),
               behavior: SnackBarBehavior.floating,
-              backgroundColor: Colors.green,
+              backgroundColor: Colors.teal,
               duration: Duration(seconds: 3),
             ),
           );
         } else {
-          _showError('Upload failed: ${response.statusCode}');
+          _showError('Processing failed: ${response.statusCode}');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Upload failed: ${response.statusCode}'),
+              content: Text('Processing failed: ${response.statusCode}'),
               behavior: SnackBarBehavior.floating,
               backgroundColor: Colors.red,
               duration: Duration(seconds: 3),
             ),
           );
         }
-        print("response: ${responseData}");
       } catch (e) {
         _showError('Error: $e');
-        print("error res: ${e}");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
@@ -177,14 +172,14 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'AI/ML Document Processing',
+          'LLM Document Processing',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
             fontSize: isWideScreen ? 24 : 20,
           ),
         ),
-        backgroundColor: Colors.purple,
+        backgroundColor: Colors.teal,
         elevation: 0,
         actions: [
           IconButton(
@@ -200,9 +195,9 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.purple.shade50,
-              Colors.deepPurple.shade50,
-              Colors.indigo.shade50,
+              Colors.teal.shade50,
+              Colors.cyan.shade50,
+              Colors.lightBlue.shade50,
             ],
           ),
         ),
@@ -226,7 +221,7 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Colors.purple.withOpacity(0.1),
+                            Colors.teal.withOpacity(0.1),
                             Colors.white,
                           ],
                         ),
@@ -242,17 +237,17 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  Icons.psychology,
-                                  color: Colors.purple,
+                                  Icons.auto_fix_high,
+                                  color: Colors.teal,
                                   size: 32,
                                 ),
                                 SizedBox(width: 12),
                                 Text(
-                                  'Upload Your Document',
+                                  'LLM Document Processing',
                                   style: TextStyle(
                                     fontSize: isWideScreen ? 28 : 24,
                                     fontWeight: FontWeight.w700,
-                                    color: Colors.purple.shade800,
+                                    color: Colors.teal.shade800,
                                     letterSpacing: 1.2,
                                   ),
                                 ),
@@ -260,10 +255,10 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'Let our AI process your documents',
+                              'Upload your document for LLM-based processing',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.purple.shade600,
+                                color: Colors.teal.shade600,
                               ),
                             ),
                             SizedBox(height: 24),
@@ -285,7 +280,7 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                                       Icon(Icons.check_circle, color: Colors.green, size: 24),
                                       SizedBox(width: 8),
                                       Text(
-                                        'Upload Successful!',
+                                        'Processing Successful!',
                                         style: TextStyle(
                                           color: Colors.green.shade800,
                                           fontWeight: FontWeight.bold,
@@ -338,13 +333,13 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                                 margin: const EdgeInsets.only(bottom: 24),
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.purple.shade50,
+                                  color: Colors.teal.shade50,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.purple.shade200),
+                                  border: Border.all(color: Colors.teal.shade200),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.file_present, color: Colors.purple, size: 24),
+                                    Icon(Icons.file_present, color: Colors.teal, size: 24),
                                     SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
@@ -355,7 +350,7 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
-                                              color: Colors.purple.shade800,
+                                              color: Colors.teal.shade800,
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -384,7 +379,7 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                               padding: EdgeInsets.all(24),
                               decoration: BoxDecoration(
                                 border: Border.all(
-                                  color: _isError ? Colors.red.shade200 : Colors.purple.shade200,
+                                  color: _isError ? Colors.red.shade200 : Colors.teal.shade200,
                                   style: BorderStyle.solid,
                                 ),
                                 borderRadius: BorderRadius.circular(12),
@@ -395,7 +390,7 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                                   Icon(
                                     _isError ? Icons.error_outline : Icons.cloud_upload,
                                     size: 48,
-                                    color: _isError ? Colors.red : Colors.purple,
+                                    color: _isError ? Colors.red : Colors.teal,
                                   ),
                                   SizedBox(height: 16),
                                   Text(
@@ -411,7 +406,7 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                                     icon: Icon(Icons.file_upload),
                                     label: Text('Browse Files'),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: _isError ? Colors.red : Colors.purple,
+                                      backgroundColor: _isError ? Colors.red : Colors.teal,
                                       foregroundColor: Colors.white,
                                       padding: EdgeInsets.symmetric(
                                         horizontal: 32,
@@ -437,13 +432,13 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                                     child: Column(
                                       children: [
                                         CircularProgressIndicator(
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.purple),
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
                                         ),
                                         SizedBox(height: 8),
                                         Text(
-                                          'Uploading...',
+                                          'Processing...',
                                           style: TextStyle(
-                                            color: Colors.purple,
+                                            color: Colors.teal,
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
@@ -454,9 +449,9 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                                   ElevatedButton.icon(
                                     onPressed: uploadedFileBytes != null ? _uploadFile : null,
                                     icon: Icon(Icons.cloud_upload),
-                                    label: Text('Upload'),
+                                    label: Text('Process Document'),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.purple,
+                                      backgroundColor: Colors.teal,
                                       foregroundColor: Colors.white,
                                       padding: EdgeInsets.symmetric(
                                         horizontal: 32,
@@ -480,7 +475,7 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                                     icon: Icon(Icons.library_books),
                                     label: Text('View Documents'),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.deepPurple,
+                                      backgroundColor: Colors.cyan,
                                       foregroundColor: Colors.white,
                                       padding: EdgeInsets.symmetric(
                                         horizontal: 32,
@@ -507,4 +502,4 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
       ),
     );
   }
-}
+} 

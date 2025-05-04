@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+
 # Import your existing functions
 
 app = Flask(__name__)
@@ -465,48 +466,6 @@ def process_form(pdf_path):
 
 
 
-
-
-# @app.route('/process', methods=['GET'])
-# def process_pdf():
-#     # Hardcoded PDF path for testing
-#     pdf_path = r'C:\Users\jaysu\Desktop\Enzigma_task\form.pdf'  # Adjust the path to your local PDF
-#     print(f"Processing PDF: {pdf_path}")
-
-#     try:
-#         # Process the form from PDF
-#         form_model = process_form(pdf_path)
-#         form_json = form_model.to_json()
-
-#         # Print the form JSON
-#         print("Parsed Form Data:")
-#         print(form_json)
-
-#         # Save the data to MongoDB
-#         collection.insert_one(json.loads(form_json))
-
-#         return jsonify({"message": "Form processed successfully", "data": json.loads(form_json)})
-
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
-
-# # Health check endpoint
-# @app.route('/health', methods=['GET'])
-# def health_check():
-#     try:
-#         # Attempt to fetch a single document to verify the connection
-#         db_status = client.admin.command('ping')
-#         if db_status.get("ok", 0) == 1:
-#             return jsonify({"status": "API is running", "mongo": "connected"}), 200
-#         else:
-#             return jsonify({"status": "API is running", "mongo": "not connected"}), 500
-#     except Exception as e:
-#         return jsonify({"status": "API is running", "mongo": "connection failed", "error": str(e)}), 500
-
-
-# if __name__ == '__main__':
-#     # Run the Flask app
-#     app.run(host='0.0.0.0', port=5000)
 from bson import ObjectId
 
 def serialize_mongo_document(doc):
@@ -525,59 +484,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # Setup basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
-
-
-# @app.route('/process', methods=['POST'])
-# def process_pdf():
-#     if 'file' not in request.files:
-#         return jsonify({"error": "No file uploaded"}), 400
-
-#     uploaded_file = request.files['file']
-#     if uploaded_file.filename == '':
-#         return jsonify({"error": "No file selected"}), 400
-
-#     # Save the file temporarily
-#     temp_file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.filename)
-#     uploaded_file.save(temp_file_path)
-#     print(f"Received and saved PDF: {temp_file_path}")
-
-#     try:
-#         # Process the form from the uploaded PDF
-#         form_model = process_form(temp_file_path)  # Replace with your PDF processing function
-#         form_json = form_model.to_json()
-
-#         # Print the parsed form data
-#         print("Parsed Form Data:")
-#         print(form_json)
-
-#         # Save the data to MongoDB
-#         collection.insert_one(json.loads(form_json))
-
-#         # Clean up the temporary file after processing
-#         os.remove(temp_file_path)
-
-#         return jsonify({"message": "Form processed successfully", "data": json.loads(form_json)})
-
-#     except Exception as e:
-#         # Clean up the temporary file in case of an error
-#         if os.path.exists(temp_file_path):
-#             os.remove(temp_file_path)
-#         return jsonify({"error": str(e)}), 500
-
-
-
-# # Endpoint to fetch all data from MongoDB
-# @app.route('/fetch_all_data', methods=['GET'])
-# def fetch_all_data():
-#     try:
-#         # Query all documents in the MongoDB collection
-#         data = list(collection.find({}, {'_id': 0}))  # Exclude the _id field from results
-
-#         # Return the data as JSON
-#         return jsonify({"message": "Data fetched successfully", "data": data}), 200
-
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
 
 
 
