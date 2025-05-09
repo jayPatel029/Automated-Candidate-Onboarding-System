@@ -1,6 +1,6 @@
 class Config {
   // Set this to true for local development, false for production
-  static const bool isLocal = true;
+  static const bool isLocal = false;
 
   // Base URLs
   static const String localBaseUrl = 'http://127.0.0.1:5000';
