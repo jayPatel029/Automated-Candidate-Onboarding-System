@@ -153,7 +153,7 @@ def preprocess_and_ocr(image_path):
 
     # OCR
     text = pytesseract.image_to_string(thresholded, lang='eng')
-    logger.info(f"Extracted Text from {image_path}:\n{text}\n")
+    logger.info(f"Extracted Text from {image_path}\n")
 
     return text
 
@@ -368,7 +368,7 @@ def parse_complete_form(ocr_text):
 
     ocr_text = clean_text(ocr_text)
     logger.info("using this of parsing")
-    logger.info(ocr_text)
+    # logger.info(ocr_text)
 
     return {
       "Name": safe_extract(r"1\.\s*Name.*?:\s*([\w\s]+(?:\s[\w\s]+)*)", ocr_text),
