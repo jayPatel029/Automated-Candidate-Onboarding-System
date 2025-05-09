@@ -1,0 +1,100 @@
+
+import fitz # PyMuPDF
+import os
+from typing import List, Dict
+from datetime import datetime
+import logging
+import textwrap
+import requests
+from groq import Groq
+from dotenv import load_dotenv
+
+load_dotenv()
+logger = logging.getLogger(__name__)
+client = Groq(api_key=os.getenv("groc_api_key"))
+
+
+def chunk_text(text, max_chars=3000) -> List[str]:
+    return textwrap.wrap(text, max_chars)
+
+def extract_text_from_pdf(pdf_path: str) -> str:
+    try:
+        doc = fitz.open(pdf_path)
+        full_text = ""
+        for page in doc:
+            full_text += page.get_text()
+        return full_text
+    except Exception as e:
+        print(f"Error reading PDF: {e}")
+        return ""
+    
+
+def scrape_pdf_with_ai(pdf_path: str, progress=None) -> Dict:
+    try:
+        # Step 1: Extract raw text from PDF
+        raw_text = extract_text_from_pdf(pdf_path)
+        if not raw_text:
+            logger.info("No text extracted from PDF.")
+            return {}
+
+        # Step 2: Chunk the raw text
+        chunks = chunk_text(raw_text)
+        url_source = f"file://{os.path.basename(pdf_path)}"
+
+        # Step 3: Prompt template for LLM to extract resume/form data
+        prompt_template = """
+You are an AI designed to extract structured information from resumes or application forms.
+From the following text, extract and return a JSON with the following keys:
+
+- name
+- email
+- phone
+- address
+- education (list of {school, degree, field, start_year, end_year})
+- experience (list of {company, title, start_date, end_date, description})
+- skills (list of strings)
+- certifications (list of {name, issuer, year})
+- languages (list of strings)
+
+Text:
+\"\"\"{chunk}\"\"\"
+Return only the JSON.
+"""
+
+        # Step 4: Send each chunk to LLM and collect structured responses
+        structured_data = []
+        for i, chunk in enumerate(chunks):
+            logger.info(f"Processing chunk {i+1}/{len(chunks)}")
+            if progress:
+                progress(i + 1, len(chunks))
+
+            prompt = prompt_template.format(chunk=chunk)
+            llm_response = call_groq(chunk=prompt, context_url=url_source)  # Assume it returns a dict
+            structured_data.append(llm_response)
+
+        # Step 5: Merge chunks into one unified structured output
+        final_data = merge_structured_data(structured_data)
+        return final_data
+
+    except Exception as e:
+        logger.exception(f"Error during PDF processing: {e}")
+        return {}
+
+def call_groq(chunk:str, context_url:str) -> List[Dict[str,str]]:
+    try:
+        chat_completion = client.chat.completions.create(
+            model="llama3-70b-8192",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Source: {context_url}\n\n{chunk}"}
+            ],
+            temperature=0.3,
+            max_completion_tokens=1024,
+            response_format={"type": "text"}
+        )
+        content = chat_completion.choices[0].message.content.strip()
+        return [extract_fields(block, context_url) for block in content.split("\n\n")]
+
+    except Exception as e:
+        logger.exception(f"groq call failed for chunk: {e}")
+        return []

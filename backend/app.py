@@ -14,6 +14,9 @@ import base64
 import logging
 from dotenv import load_dotenv
 load_dotenv()
+# import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 
@@ -40,7 +43,7 @@ def encode_image_to_base64(image_path):
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode('utf-8')
     except Exception as e:
-        print(f"Failed to encode image {image_path}: {e}")
+        logger.info(f"Failed to encode image {image_path}: {e}")
         return None
 
 
@@ -53,7 +56,7 @@ def is_non_black_image(image):
 
 
 def extract_images_from_pdf(pdf_path, output_dir="extracted_images"):
-    print(f"PDF Path: {pdf_path}, Output Directory: {output_dir}")  # Debug log
+    logger.info(f"PDF Path: {pdf_path}, Output Directory: {output_dir}")  # Debug log
     os.makedirs(output_dir, exist_ok=True)
     pdf_document = fitz.open(pdf_path)
 
@@ -70,7 +73,7 @@ def extract_images_from_pdf(pdf_path, output_dir="extracted_images"):
     extracted_images = []
     for page_number in range(len(pdf_document)):
         if page_number > 1:  # Process only the first two pages
-            print(f"Skipping page {page_number + 1} as it is beyond the first two pages.")  # Debug log
+            logger.info(f"Skipping page {page_number + 1} as it is beyond the first two pages.")  # Debug log
             break
 
         page = pdf_document[page_number]
@@ -79,12 +82,12 @@ def extract_images_from_pdf(pdf_path, output_dir="extracted_images"):
         pixmap = page.get_pixmap(dpi=300)  # Render at 300 DPI for better quality
         page_image_path = f"{output_dir}/page_{page_number + 1}.png"
         pixmap.save(page_image_path)
-        print(f"Saved page {page_number + 1} image at {page_image_path}.")  # Debug log
+        logger.info(f"Saved page {page_number + 1} image at {page_image_path}.")  # Debug log
 
         for key, value in regions.items():
             if (page_number == 0 and key == "photo") or (page_number == 1 and key == "signature"):
                 x0, y0, x1, y1 = value["coords"]
-                print(f"Processing {key} on page {page_number + 1} with coords: {x0, y0, x1, y1}.")  # Debug log
+                logger.info(f"Processing {key} on page {page_number + 1} with coords: {x0, y0, x1, y1}.")  # Debug log
 
                 # Crop the region of interest
                 image = Image.open(page_image_path)
@@ -95,9 +98,9 @@ def extract_images_from_pdf(pdf_path, output_dir="extracted_images"):
                     cropped_image_path = f"{output_dir}/{key}_cropped.png"
                     cropped_image.save(cropped_image_path)
                     extracted_images.append(cropped_image_path)
-                    print(f"Saved cropped {key} image at {cropped_image_path}.")  # Debug log
+                    logger.info(f"Saved cropped {key} image at {cropped_image_path}.")  # Debug log
                 else:
-                    print(f"Cropped {key} image is completely black. Skipping save.")  # Debug log
+                    logger.info(f"Cropped {key} image is completely black. Skipping save.")  # Debug log
     return extracted_images
 
 def process_pdf_to_images(pdf_path, output_dir="processed_pages"):
@@ -150,7 +153,7 @@ def preprocess_and_ocr(image_path):
 
     # OCR
     text = pytesseract.image_to_string(thresholded, lang='eng')
-    print(f"Extracted Text from {image_path}:\n{text}\n")
+    logger.info(f"Extracted Text from {image_path}:\n{text}\n")
 
     return text
 
@@ -364,8 +367,8 @@ def parse_complete_form(ocr_text):
         return match.group(group_index).strip() if match else default
 
     ocr_text = clean_text(ocr_text)
-    print("using this of parsing")
-    print(ocr_text)
+    logger.info("using this of parsing")
+    logger.info(ocr_text)
 
     return {
       "Name": safe_extract(r"1\.\s*Name.*?:\s*([\w\s]+(?:\s[\w\s]+)*)", ocr_text),
@@ -415,21 +418,21 @@ class FormModel:
 # Complete Workflow
 def process_form(pdf_path):
 
-    print("Converting PDF to Images...")
+    logger.info("Converting PDF to Images...")
     image_paths = process_pdf_to_images(pdf_path)
 
     extracted_text = ""
-    print("Performing OCR...")
+    logger.info("Performing OCR...")
     for image_path in image_paths:
         page_text = preprocess_and_ocr(image_path)
         extracted_text += f"\n--- Page {image_paths.index(image_path) + 1} ---\n{page_text}"
 
 
-    print("Parsing OCR Results...")
+    logger.info("Parsing OCR Results...")
     parsed_data = parse_complete_form(extracted_text)
 
 
-    print("Extracting Images from PDF...")
+    logger.info("Extracting Images from PDF...")
     extracted_images = extract_images_from_pdf(pdf_path)
 
 
@@ -455,10 +458,10 @@ def process_form(pdf_path):
             })
 
 
-    print("Creating Form Model...")
+    logger.info("Creating Form Model...")
     form_model = FormModel(parsed_data, encoded_images)
 
-    # print("Extracting Images from PDF...")
+    # logger.info("Extracting Images from PDF...")
     # extracted_images = extract_images_from_pdf(pdf_path)
 
     return form_model
